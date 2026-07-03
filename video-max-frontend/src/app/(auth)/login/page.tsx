@@ -26,7 +26,7 @@ export default function LoginPage() {
       router.push('/library')
     } catch (error) {
       setError('root', {
-        message: 'Invalid email or password',
+        message: error instanceof Error ? error.message : 'Invalid email or password',
       })
     }
   }
