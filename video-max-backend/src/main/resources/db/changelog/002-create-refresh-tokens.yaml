@@ -1,0 +1,68 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-refresh-tokens
+      author: IA
+      changes:
+        - createTable:
+            tableName: refresh_tokens
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token_hash
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: false
+              - column:
+                  name: revoked_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_refresh_tokens_user
+            baseTableName: refresh_tokens
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - createIndex:
+            indexName: ux_refresh_tokens_token_hash
+            tableName: refresh_tokens
+            unique: true
+            columns:
+              - column:
+                  name: token_hash
+        - createIndex:
+            indexName: ix_refresh_tokens_user_id
+            tableName: refresh_tokens
+            columns:
+              - column:
+                  name: user_id
+        - createIndex:
+            indexName: ix_refresh_tokens_expires_at
+            tableName: refresh_tokens
+            columns:
+              - column:
+                  name: expires_at
+      rollback:
+        - dropTable:
+            tableName: refresh_tokens
