@@ -1,3 +1,68 @@
+## Local Development Environment
+
+### Services
+
+| Service | Container | URL | Purpose |
+|---|---|---|---|
+| Frontend | `video-max-frontend` | http://localhost:3000 | Next.js 14 dev server |
+| Backend | `video-max-backend` | http://localhost:8080/api/v1 | Spring Boot API |
+| PostgreSQL | `video-max-postgres` | `localhost:5432` | Database |
+| MailHog | `video-max-mailhog` | http://localhost:8025 | Email catcher (SMTP: 1025) |
+
+### Start everything
+
+```bash
+# 1. Start all infrastructure + frontend containers
+docker compose up -d
+
+# 2. Start the Spring Boot app inside its container (long-running — must run in background)
+docker compose exec -d spring-boot-app sh -c \
+  'mvn spring-boot:run -Dspring-boot.run.profiles=dev > /tmp/app.log 2>&1'
+
+# 3. Tail backend logs until "Started VideoMaxApplication" appears
+docker compose exec spring-boot-app sh -c \
+  'until grep -qE "Started VideoMaxApplication|APPLICATION FAILED" /tmp/app.log 2>/dev/null; \
+   do sleep 3; done && tail -20 /tmp/app.log'
+
+# 4. Verify all services are healthy
+curl -sf http://localhost:8080/api/v1/actuator/health
+curl -sf -o /dev/null -w "%{http_code}" http://localhost:3000
+```
+
+### Stop everything
+
+```bash
+# Stop all containers (data is preserved in volumes)
+docker compose down
+
+# Stop AND delete all data (fresh DB on next start)
+docker compose down -v
+```
+
+### Other useful commands
+
+```bash
+# Check status of all containers
+docker compose ps
+
+# Tail backend application logs live
+docker compose exec spring-boot-app tail -f /tmp/app.log
+
+# View logs of any container
+docker compose logs -f frontend
+docker compose logs -f spring-boot-app
+
+# Restart a single service
+docker compose restart frontend
+docker compose restart spring-boot-app
+
+# Rebuild images after Dockerfile or dependency changes
+docker compose build frontend
+docker compose build spring-boot-app
+```
+
+---
+
 ## Docker Networking
 
 This project runs entirely in Docker containers. When configuring connections between services (database, cache, queue, etc.), **always use the Docker Compose service name** as the host — never `localhost` or `127.0.0.1`.
