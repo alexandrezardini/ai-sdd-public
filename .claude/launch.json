@@ -1,0 +1,21 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "docker-compose",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": ["compose", "up"],
+      "port": 3000
+    },
+    {
+      "name": "spring-boot-app",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": [
+        "compose", "exec", "spring-boot-app",
+        "mvn", "spring-boot:run", "-Dspring-boot.run.profiles=dev"
+      ],
+      "port": 8080,
+      "autoPort": false
+    }
+  ]
+}

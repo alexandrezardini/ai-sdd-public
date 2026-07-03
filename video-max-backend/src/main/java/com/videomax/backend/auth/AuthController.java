@@ -8,6 +8,7 @@ import com.videomax.backend.auth.dto.RegisterRequest;
 import com.videomax.backend.auth.dto.ResetPasswordRequest;
 import com.videomax.backend.auth.dto.UserResponse;
 import com.videomax.backend.auth.internal.AuthService;
+import com.videomax.backend.auth.internal.AuthService.AuthResult;
 import com.videomax.backend.auth.internal.RefreshTokenService;
 import com.videomax.backend.auth.internal.entity.User;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,7 +31,8 @@ import java.util.UUID;
 public class AuthController {
 
     private static final String REFRESH_TOKEN_COOKIE = "refresh_token";
-    private static final String REFRESH_TOKEN_PATH = "/api/v1/auth";
+    private static final String REFRESH_TOKEN_PATH = "/";
+    private static final String LEGACY_REFRESH_TOKEN_PATH = "/api/v1/auth";
 
     private final AuthService authService;
     private final RefreshTokenService refreshTokenService;
@@ -44,9 +46,9 @@ public class AuthController {
     public ResponseEntity<AuthResponse> register(
             @Valid @RequestBody RegisterRequest request,
             HttpServletResponse response) {
-        AuthResponse authResponse = authService.register(request.name(), request.email(), request.password());
-        setRefreshTokenCookie(response, authResponse);
-        return ResponseEntity.status(HttpStatus.CREATED).body(authResponse);
+        AuthResult result = authService.register(request.name(), request.email(), request.password());
+        setRefreshTokenCookie(response, result.refreshToken());
+        return ResponseEntity.status(HttpStatus.CREATED).body(result.response());
     }
 
     @PostMapping("/login")
@@ -55,9 +57,9 @@ public class AuthController {
             HttpServletRequest httpRequest,
             HttpServletResponse response) {
         String clientIp = getClientIp(httpRequest);
-        AuthResponse authResponse = authService.login(request.email(), request.password(), clientIp);
-        setRefreshTokenCookie(response, authResponse);
-        return ResponseEntity.ok(authResponse);
+        AuthResult result = authService.login(request.email(), request.password(), clientIp);
+        setRefreshTokenCookie(response, result.refreshToken());
+        return ResponseEntity.ok(result.response());
     }
 
     @PostMapping("/refresh")
@@ -69,9 +71,9 @@ public class AuthController {
         }
 
         String tokenHash = refreshTokenService.hashToken(refreshToken);
-        AuthResponse authResponse = authService.refresh(tokenHash, "");
-        setRefreshTokenCookie(response, authResponse);
-        return ResponseEntity.ok(authResponse);
+        AuthResult result = authService.refresh(tokenHash, "");
+        setRefreshTokenCookie(response, result.refreshToken());
+        return ResponseEntity.ok(result.response());
     }
 
     @PostMapping("/logout")
@@ -121,17 +123,23 @@ public class AuthController {
         return request.getRemoteAddr();
     }
 
-    private void setRefreshTokenCookie(HttpServletResponse response, AuthResponse authResponse) {
-        // In a real scenario, the refreshToken would be generated here
-        // For now, we'll set a placeholder that the client can use
+    private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
         response.addHeader("Set-Cookie",
             String.format("%s=%s; HttpOnly; Secure; SameSite=Lax; Path=%s; Max-Age=604800",
-                REFRESH_TOKEN_COOKIE, "token", REFRESH_TOKEN_PATH));
+                REFRESH_TOKEN_COOKIE, refreshToken, REFRESH_TOKEN_PATH));
+        // Expire any cookie a browser stored under the old, narrower path so it can't
+        // shadow the new one (browsers send the more specific path's cookie first).
+        response.addHeader("Set-Cookie",
+            String.format("%s=%s; Path=%s; Max-Age=0",
+                REFRESH_TOKEN_COOKIE, "", LEGACY_REFRESH_TOKEN_PATH));
     }
 
     private void clearRefreshTokenCookie(HttpServletResponse response) {
         response.addHeader("Set-Cookie",
             String.format("%s=%s; Path=%s; Max-Age=0",
                 REFRESH_TOKEN_COOKIE, "", REFRESH_TOKEN_PATH));
+        response.addHeader("Set-Cookie",
+            String.format("%s=%s; Path=%s; Max-Age=0",
+                REFRESH_TOKEN_COOKIE, "", LEGACY_REFRESH_TOKEN_PATH));
     }
 }

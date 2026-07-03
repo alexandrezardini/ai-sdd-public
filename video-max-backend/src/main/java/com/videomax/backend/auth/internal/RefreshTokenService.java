@@ -39,7 +39,7 @@ public class RefreshTokenService {
     public RefreshToken persistToken(UUID userId, String tokenHash, int ttlSeconds) {
         Instant expiresAt = Instant.now().plus(ttlSeconds, ChronoUnit.SECONDS);
         RefreshToken token = new RefreshToken(
-            UUID.randomUUID(),
+            null,
             userId,
             tokenHash,
             expiresAt,

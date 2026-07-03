@@ -41,21 +41,24 @@ public class PasswordResetService {
         return Base64.getEncoder().encodeToString(hash);
     }
 
-    public PasswordResetToken createResetToken(UUID userId) {
+    public ResetTokenResult createResetToken(UUID userId) {
         String token = generateToken();
         String tokenHash = hashToken(token);
         Instant expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES);
 
         PasswordResetToken resetToken = new PasswordResetToken(
-            UUID.randomUUID(),
+            null,
             userId,
             tokenHash,
             expiresAt,
             null,
             Instant.now()
         );
-        return repository.save(resetToken);
+        PasswordResetToken saved = repository.save(resetToken);
+        return new ResetTokenResult(saved, token);
     }
+
+    public record ResetTokenResult(PasswordResetToken token, String rawToken) {}
 
     public PasswordResetToken findByTokenHash(String tokenHash) throws InvalidResetTokenException {
         return repository.findByTokenHash(tokenHash)

@@ -53,7 +53,7 @@ public class AuthService {
         this.mailProperties = mailProperties;
     }
 
-    public AuthResponse register(String name, String email, String password) throws WeakPasswordException, EmailAlreadyRegisteredException {
+    public AuthResult register(String name, String email, String password) throws WeakPasswordException, EmailAlreadyRegisteredException {
         validatePassword(password);
 
         if (userRepository.existsByEmailIgnoreCase(email)) {
@@ -64,7 +64,7 @@ public class AuthService {
 
         String passwordHash = passwordEncoder.encode(password);
         User user = new User(
-            UUID.randomUUID(),
+            null,
             email,
             passwordHash,
             name,
@@ -81,7 +81,7 @@ public class AuthService {
         return buildAuthResponse(user, accessToken, refreshToken);
     }
 
-    public AuthResponse login(String email, String password, String clientIp) throws InvalidCredentialsException, RateLimitExceededException {
+    public AuthResult login(String email, String password, String clientIp) throws InvalidCredentialsException, RateLimitExceededException {
         if (!rateLimiter.tryConsume(clientIp)) {
             throw new RateLimitExceededException(
                 "Too many login attempts. Try again in 15 minutes."
@@ -107,7 +107,7 @@ public class AuthService {
         return buildAuthResponse(user, accessToken, refreshToken);
     }
 
-    public AuthResponse refresh(String refreshTokenHash, String clientIp) throws InvalidCredentialsException {
+    public AuthResult refresh(String refreshTokenHash, String clientIp) throws InvalidCredentialsException {
         RefreshToken token = refreshTokenService.findByTokenHash(refreshTokenHash);
 
         if (!refreshTokenService.isTokenValid(token)) {
@@ -138,9 +138,9 @@ public class AuthService {
     public void forgotPassword(String email) {
         userRepository.findByEmailIgnoreCase(email)
             .ifPresent(user -> {
-                PasswordResetToken resetToken = passwordResetService.createResetToken(user.id());
+                PasswordResetService.ResetTokenResult resetToken = passwordResetService.createResetToken(user.id());
                 String resetLink = UriComponentsBuilder.fromUriString(mailProperties.resetLinkBase())
-                    .queryParam("token", extractTokenFromHash(resetToken))
+                    .queryParam("token", resetToken.rawToken())
                     .build()
                     .toUriString();
                 emailService.sendPasswordResetEmail(email, resetLink);
@@ -148,9 +148,10 @@ public class AuthService {
         // Always return success regardless of whether email exists (prevent enumeration)
     }
 
-    public void resetPassword(String tokenHash, String newPassword) throws InvalidResetTokenException, WeakPasswordException {
+    public void resetPassword(String rawToken, String newPassword) throws InvalidResetTokenException, WeakPasswordException {
         validatePassword(newPassword);
 
+        String tokenHash = passwordResetService.hashToken(rawToken);
         PasswordResetToken token = passwordResetService.findByTokenHash(tokenHash);
 
         if (!token.isValid()) {
@@ -184,8 +185,8 @@ public class AuthService {
         }
     }
 
-    private AuthResponse buildAuthResponse(User user, String accessToken, String refreshToken) {
-        return new AuthResponse(
+    private AuthResult buildAuthResponse(User user, String accessToken, String refreshToken) {
+        AuthResponse response = new AuthResponse(
             accessToken,
             jwtService.getAccessTtl(),
             new UserResponse(
@@ -195,11 +196,8 @@ public class AuthService {
                 user.createdAt()
             )
         );
+        return new AuthResult(response, refreshToken);
     }
 
-    private String extractTokenFromHash(PasswordResetToken token) {
-        // In production, we'd need to store the raw token somewhere
-        // For now, we return the hash (which is used by the client to call reset-password)
-        return token.tokenHash();
-    }
+    public record AuthResult(AuthResponse response, String refreshToken) {}
 }
