@@ -70,4 +70,12 @@ public class JwtService {
             return false;
         }
     }
+
+    public int getAccessTtl() {
+        return jwtProperties.accessTtl();
+    }
+
+    public int getRefreshTtl() {
+        return jwtProperties.refreshTtl();
+    }
 }
