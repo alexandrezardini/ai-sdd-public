@@ -13,7 +13,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -22,13 +22,42 @@ services:
     image: mailhog/mailhog:latest
     container_name: video-max-mailhog
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
     healthcheck:
-      test: [ "CMD", "nc", "-z", "localhost", "1025" ]
+      test: ["CMD", "nc", "-z", "localhost", "1025"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  spring-boot-app:
+    build:
+      context: ./video-max-backend
+      dockerfile: Dockerfile
+    container_name: video-max-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      APP_JWT_SECRET: dev-local-secret-key-minimum-32-characters-required
+      APP_JWT_ISSUER: video-max
+      APP_MAIL_RESET_LINK_BASE: http://localhost:3000/reset-password
+      APP_RATE_LIMIT_TRUST_PROXY: "false"
+    volumes:
+      - ./video-max-backend/src:/app/src        # hot-reload source
+      - maven_cache:/root/.m2                   # persist downloaded deps
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
 volumes:
   postgres_data:
+  maven_cache:

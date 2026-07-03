@@ -3,7 +3,6 @@ package com.videomax.backend.auth.internal;
 import com.videomax.backend.config.JwtProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Service;
 
@@ -43,27 +42,27 @@ public class JwtService {
             .issuer(jwtProperties.issuer())
             .issuedAt(Date.from(now))
             .expiration(Date.from(expiresAt))
-            .signWith(secretKey, SignatureAlgorithm.HS256)
+            .signWith(secretKey)
             .compact();
     }
 
-    public UUID getUserId(String token) throws Exception {
-        Claims claims = Jwts.parserBuilder()
-            .setSigningKey(secretKey)
+    public UUID getUserId(String token) {
+        Claims claims = Jwts.parser()
+            .verifyWith(secretKey)
             .build()
-            .parseClaimsJws(token)
-            .getBody();
+            .parseSignedClaims(token)
+            .getPayload();
 
         return UUID.fromString(claims.getSubject());
     }
 
     public boolean isTokenValid(String token) {
         try {
-            Claims claims = Jwts.parserBuilder()
-                .setSigningKey(secretKey)
+            Claims claims = Jwts.parser()
+                .verifyWith(secretKey)
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
 
             return claims.getExpiration().after(new Date());
         } catch (Exception e) {
