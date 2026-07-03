@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://db:5432/video_max_dev
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  mail:
+    host: mailhog
+    port: 1025
+    username: ''
+    password: ''
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+logging:
+  level:
+    root: INFO
+    com.videomax: DEBUG

@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: video-max-backend
+  profiles:
+    active: dev
+  jpa:
+    open-in-view: false
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  data:
+    jdbc:
+      repositories:
+        enabled: true
+  web:
+    cors:
+      allowed-origins: http://localhost:3000
+      allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+      allowed-headers: '*'
+      allow-credentials: true
+      max-age: 3600
+
+app:
+  jwt:
+    issuer: video-max
+    accessTtl: 900
+    refreshTtl: 604800
+  mail:
+    resetLinkBase: http://localhost:3000/reset-password
+  rateLimitTrustProxy: false
+
+server:
+  servlet:
+    context-path: /api/v1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
