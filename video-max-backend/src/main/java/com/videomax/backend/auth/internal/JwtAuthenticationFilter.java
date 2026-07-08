@@ -1,6 +1,6 @@
-package com.videomax.backend.config;
+package com.videomax.backend.auth.internal;
 
-import com.videomax.backend.auth.internal.JwtService;
+import com.videomax.backend.config.JwtAuthFilter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.UUID;
 
 @Component
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter implements JwtAuthFilter {
 
     private final JwtService jwtService;
 
