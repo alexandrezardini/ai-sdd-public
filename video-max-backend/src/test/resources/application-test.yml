@@ -1,0 +1,40 @@
+# Test profile. Datasource is supplied at runtime by Testcontainers via
+# @DynamicPropertySource; mail points at an in-JVM GreenMail SMTP server.
+#
+# The context-path is cleared for tests: the production app serves under
+# /api/v1 (smoke-verified separately), but under @SpringBootTest the Spring
+# Security path matchers ("/auth/**") are evaluated against the raw request
+# URI, so a context-path prefix would make every permitAll rule miss. Serving
+# auth at the root here keeps the security rules unambiguous while still
+# exercising the real controller, security chain, service layer and database.
+server:
+  servlet:
+    context-path: ""
+
+app:
+  jwt:
+    secret: test-secret-key-that-is-at-least-32-bytes-long-000
+    issuer: video-max
+    accessTtl: 900
+    refreshTtl: 604800
+  mail:
+    fromAddress: no-reply@videomax.test
+    resetLinkBase: http://localhost:3000/reset-password
+  rateLimitTrustProxy: false
+
+spring:
+  mail:
+    host: 127.0.0.1
+    port: 3025
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+logging:
+  level:
+    root: WARN
+    com.videomax: INFO
+    liquibase: WARN
