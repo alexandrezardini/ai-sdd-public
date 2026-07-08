@@ -66,6 +66,11 @@ public class RefreshTokenService {
         repository.deleteAllByUserId(userId);
     }
 
+    public void revokeToken(String tokenHash) {
+        repository.findByTokenHash(tokenHash)
+            .ifPresent(token -> repository.save(token.revoke()));
+    }
+
     public boolean isTokenValid(RefreshToken token) {
         return token.isValid();
     }
