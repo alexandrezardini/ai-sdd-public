@@ -130,9 +130,7 @@ public class AuthService {
     }
 
     public void logout(String refreshTokenHash) {
-        refreshTokenService.findByTokenHash(refreshTokenHash);
-        refreshTokenService.findByTokenHash(refreshTokenHash);
-        // Token will be deleted/revoked by the filter
+        refreshTokenService.revokeToken(refreshTokenHash);
     }
 
     public void forgotPassword(String email) {
