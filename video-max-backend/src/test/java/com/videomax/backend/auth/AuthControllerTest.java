@@ -9,9 +9,9 @@ import com.videomax.backend.auth.exception.InvalidResetTokenException;
 import com.videomax.backend.auth.exception.RateLimitExceededException;
 import com.videomax.backend.auth.internal.AuthService;
 import com.videomax.backend.auth.internal.AuthService.AuthResult;
+import com.videomax.backend.auth.internal.JwtAuthenticationFilter;
 import com.videomax.backend.auth.internal.JwtService;
 import com.videomax.backend.auth.internal.RefreshTokenService;
-import com.videomax.backend.config.JwtAuthenticationFilter;
 import com.videomax.backend.config.SecurityConfig;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * layer is mocked.
  */
 @WebMvcTest(AuthController.class)
-@Import({SecurityConfig.class, JwtAuthenticationFilter.class})
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class, AuthExceptionHandler.class})
 class AuthControllerTest {
 
     @Autowired
